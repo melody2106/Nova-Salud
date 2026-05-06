@@ -1,0 +1,25 @@
+# --- SECRETOS ---
+.env
+backend/.env
+frontend/.env
+
+# --- DEPENDENCIAS ---
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# --- COMPILACIÓN Y LOGS ---
+dist/
+dist-ssr/
+*.log
+npm-debug.log*
+
+# --- EDITORES (VS Code, IntelliJ) ---
+.vscode/
+.idea/
+*.swp
+*.suo
+
+# --- SISTEMA ---
+.DS_Store
+Thumbs.db
