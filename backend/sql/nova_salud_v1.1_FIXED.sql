@@ -1204,7 +1204,3 @@ SELECT
 FROM information_schema.ROUTINES
 WHERE ROUTINE_SCHEMA = 'nova_salud'
 ORDER BY ROUTINE_NAME;
-
--- =============================================================================
--- FIN DEL SCRIPT - NOVA SALUD v1.1 (Bug #1308 corregido)
--- =============================================================================
