@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Cross, User, Lock, AlertCircle } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext.js";
+import { Link } from "react-router-dom";
 
 export function Login() {
   const navigate = useNavigate();
@@ -152,6 +153,11 @@ export function Login() {
               <p>Usuario: <span className="font-mono bg-slate-100 px-1 rounded">admin</span></p>
               <p>Contraseña: <span className="font-mono bg-slate-100 px-1 rounded">password123</span></p>
             </div>
+
+            <p className="text-center text-sm text-slate-500 pt-2">
+              ¿No tienes cuenta?{" "}
+              <Link to="/register" className="text-teal-600 font-semibold hover:underline">Regístrate</Link>
+            </p>
           </form>
         </div>
       </div>

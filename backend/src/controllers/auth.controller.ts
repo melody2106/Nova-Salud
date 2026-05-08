@@ -7,39 +7,30 @@ import { LoginRequest } from '../types/index.js';
 
 /**
  * POST /api/auth/login
- * Autentica un usuario usando el SP_Login
  */
 export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { username, password }: LoginRequest = req.body;
 
-    // 1. Validar entrada
     if (!username || !password) {
       sendError(res, 'Username y password son requeridos', 400);
       return;
     }
 
-    // 2. Ejecutar SP_Login para obtener usuario
     const results: any = await executeStoredProcedure('SP_Login', [username]);
-
-    // results = [ [filas], metadata ] → usuario está en results[0][0]
     const user = results?.[0]?.[0];
 
-    // 3. Verificar si el usuario existe y si se recuperó el hash
     if (!user || !user.password_hash) {
       sendError(res, 'Usuario o contraseña incorrectos', 401);
       return;
     }
 
-    // 4. Comparar contraseña enviada con el hash de la BD
     const passwordMatch = await bcryptjs.compare(password, user.password_hash);
-
     if (!passwordMatch) {
       sendError(res, 'Usuario o contraseña incorrectos', 401);
       return;
     }
 
-    // 5. Generar JWT Token (válido por 8 horas)
     const token = jwt.sign(
       {
         id_usuario: user.id_usuario,
@@ -52,22 +43,17 @@ export async function login(req: Request, res: Response): Promise<void> {
       { expiresIn: '8h' }
     );
 
-    // 6. Devolver respuesta exitosa con los datos del usuario
-    sendSuccess(
-      res,
-      {
-        token,
-        user: {
-          id_usuario: user.id_usuario,
-          username: user.username,
-          nombres: user.nombres,
-          apellidos: user.apellidos,
-          cargo: user.nombre_cargo,
-        },
+    sendSuccess(res, {
+      token,
+      user: {
+        id_usuario: user.id_usuario,
+        username: user.username,
+        nombres: user.nombres,
+        apellidos: user.apellidos,
+        cargo: user.nombre_cargo,
       },
-      'Login exitoso',
-      200
-    );
+    }, 'Login exitoso', 200);
+
   } catch (error) {
     handleError(res, error, 'Error en el login');
   }
@@ -75,37 +61,67 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 /**
  * POST /api/auth/registrar
- * Registra un nuevo usuario con contraseña encriptada
+ * Registro público ANTES del login — crea Registro + Empleado + Usuario con id_cargo=1
  */
 export async function registrarUsuario(req: Request, res: Response): Promise<void> {
   try {
-    const { username, password, id_empleado } = req.body;
+    const { dni, nombres, apellidos, username, password } = req.body;
 
-    // Validar entrada
-    if (!username || !password || !id_empleado) {
-      sendError(res, 'Faltan datos obligatorios: username, password, id_empleado', 400);
+    if (!dni || !nombres || !apellidos || !username || !password) {
+      sendError(res, 'Faltan datos: dni, nombres, apellidos, username, password', 400);
       return;
     }
 
-    // 🔒 Encriptar la contraseña (Hashing)
     const salt = await bcryptjs.genSalt(10);
     const passwordHash = await bcryptjs.hash(password, salt);
 
-    // Llamar al procedimiento almacenado para insertar
-    await executeStoredProcedure('SP_Usuario_Crear', [username, passwordHash, id_empleado]);
+    const results: any = await executeStoredProcedure('SP_Registrar', [
+      dni, nombres, apellidos, username, passwordHash
+    ]);
 
-    // Respuesta exitosa
-    sendSuccess(
-      res,
-      { username, id_empleado },
-      'Usuario registrado exitosamente con seguridad activa',
-      201
-    );
+    const row = results?.[0]?.[0];
+
+    if (!row || row.resultado === 'ERROR') {
+      sendError(res, row?.mensaje || 'Error al registrar', 400);
+      return;
+    }
+
+    sendSuccess(res, { username }, 'Usuario registrado exitosamente', 201);
+
   } catch (error: any) {
     if (error.code === 'ER_DUP_ENTRY') {
-      sendError(res, 'El nombre de usuario ya existe', 400);
+      sendError(res, 'El DNI o username ya existe', 400);
       return;
     }
     handleError(res, error, 'Error al registrar usuario');
+  }
+}
+
+/**
+ * POST /api/auth/crear-usuario
+ * Registro INTERNO desde el sistema (RRHH/Admin) — requiere id_empleado ya existente
+ */
+export async function crearUsuario(req: Request, res: Response): Promise<void> {
+  try {
+    const { username, password, id_empleado } = req.body;
+
+    if (!username || !password || !id_empleado) {
+      sendError(res, 'Faltan datos: username, password, id_empleado', 400);
+      return;
+    }
+
+    const salt = await bcryptjs.genSalt(10);
+    const passwordHash = await bcryptjs.hash(password, salt);
+
+    await executeStoredProcedure('SP_Usuario_Crear', [username, passwordHash, id_empleado]);
+
+    sendSuccess(res, { username, id_empleado }, 'Usuario creado exitosamente', 201);
+
+  } catch (error: any) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      sendError(res, 'El username ya existe', 400);
+      return;
+    }
+    handleError(res, error, 'Error al crear usuario');
   }
 }

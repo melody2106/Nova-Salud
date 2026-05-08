@@ -191,3 +191,22 @@ export type {
   DetalleCompraRequest,
   ApiResponse,
 } from '../types/index';
+
+/**
+ * POST /api/auth/registrar
+ * Registra un nuevo empleado + usuario con id_cargo=1 por defecto
+ * Manda password en texto plano — el backend hace el hash con bcrypt
+ */
+export async function registrarApi(data: {
+  dni: string;
+  nombres: string;
+  apellidos: string;
+  username: string;
+  password: string;
+}): Promise<ApiResponse<{ username: string }>> {
+  const res = await http.post<ApiResponse<{ username: string }>>(
+    '/auth/registrar',
+    data
+  );
+  return res.data;
+}
