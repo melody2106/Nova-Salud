@@ -1,0 +1,26 @@
+{
+  "version": "0.2",
+  "language": "en,es",
+  "dictionaries": ["spanish", "english"],
+  "dictionaryDefinitions": [
+    {
+      "name": "spanish",
+      "path": "./node_modules/cspell-dict-spanish/cspell-dict-es.txt"
+    }
+  ],
+  "ignorePaths": ["node_modules", "dist", "src/**/*.test.tsx"],
+  "words": [
+    "axios",
+    "bcryptjs",
+    "cors",
+    "dotenv",
+    "express",
+    "jsonwebtoken",
+    "lucide",
+    "mysql",
+    "react",
+    "tailwind",
+    "tsx",
+    "vite"
+  ]
+}

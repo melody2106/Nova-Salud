@@ -1,8 +1,76 @@
-import { useState } from "react";
-import { Users, UserCircle, Search, Plus, Save } from "lucide-react";
+import axios from "axios";
+import { useState, type FormEvent } from "react";
+import { Users, UserCircle, Search, Plus, Save, X } from "lucide-react";
 
 export function HR() {
   const [activeTab, setActiveTab] = useState<"empleados" | "usuarios">("empleados");
+  const [showModal, setShowModal] = useState(false);
+  const [nombresRH, setNombresRH] = useState("");
+  const [apellidosRH, setApellidosRH] = useState("");
+  const [dniRH, setDniRH] = useState("");
+  const [usernameRH, setUsernameRH] = useState("");
+  const [passwordRH, setPasswordRH] = useState("");
+  const [idCargoRH, setIdCargoRH] = useState("2");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+  const handleOpenModal = () => {
+    setFormError(null);
+    setFormMessage(null);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  const handleSubmitRegister = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setFormError(null);
+    setFormMessage(null);
+
+    if (!nombresRH || !apellidosRH || !dniRH || !usernameRH || !passwordRH || !idCargoRH) {
+      setFormError("Completa todos los campos obligatorios.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/register`,
+        {
+          nombres: nombresRH,
+          apellidos: apellidosRH,
+          dni: dniRH,
+          username: usernameRH,
+          password: passwordRH,
+          id_cargo: Number(idCargoRH),
+        }
+      );
+
+      if (response.data?.success) {
+        setFormMessage("Empleado registrado con éxito.");
+        setNombresRH("");
+        setApellidosRH("");
+        setDniRH("");
+        setUsernameRH("");
+        setPasswordRH("");
+        setIdCargoRH("2");
+        setShowModal(false);
+      } else {
+        setFormError(response.data?.message || "No se pudo registrar el empleado.");
+      }
+    } catch (error: any) {
+      console.error("Error al registrar empleado:", error);
+      setFormError(error?.response?.data?.message || "Error al conectar con el servidor.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
@@ -47,49 +115,129 @@ export function HR() {
             {activeTab === "empleados" && (
               <>
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                  <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <Plus className="w-5 h-5 text-teal-600" />
-                    Registrar Nuevo Empleado
-                  </h2>
-                  <form className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">DNI *</label>
-                      <input type="text" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Número de DNI" />
+                      <h2 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <Plus className="w-5 h-5 text-teal-600" />
+                        Registrar Nuevo Empleado
+                      </h2>
+                      <p className="text-sm text-slate-500">Registra un empleado y crea sus credenciales de acceso.</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Cargo *</label>
-                      <select className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none bg-white">
-                        <option>Seleccione un cargo...</option>
-                        <option>Químico Farmacéutico</option>
-                        <option>Técnico de Farmacia</option>
-                        <option>Cajero</option>
-                        <option>Administrador</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Nombres *</label>
-                      <input type="text" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nombres completos" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Apellidos *</label>
-                      <input type="text" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Apellidos completos" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Teléfono</label>
-                      <input type="tel" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Número de contacto" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
-                      <input type="email" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none" placeholder="ejemplo@correo.com" />
-                    </div>
-                    <div className="col-span-1 md:col-span-2 pt-4 mt-2 border-t border-slate-100 flex justify-end">
-                      <button type="button" className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
-                        <Save className="w-4 h-4" />
-                        Guardar Empleado
-                      </button>
-                    </div>
-                  </form>
+                    <button
+                      type="button"
+                      onClick={handleOpenModal}
+                      className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Registrar Empleado
+                    </button>
+                  </div>
                 </div>
+
+                {showModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-8">
+                    <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden">
+                      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900">Registrar empleado</h3>
+                          <p className="text-sm text-slate-500">Completa los datos para crear el empleado y usuario del sistema.</p>
+                        </div>
+                        <button type="button" onClick={handleCloseModal} className="text-slate-500 hover:text-slate-900">
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <form className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5" onSubmit={handleSubmitRegister}>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Nombres *</label>
+                          <input
+                            value={nombresRH}
+                            onChange={(e) => setNombresRH(e.target.value)}
+                            type="text"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                            placeholder="Nombres completos"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Apellidos *</label>
+                          <input
+                            value={apellidosRH}
+                            onChange={(e) => setApellidosRH(e.target.value)}
+                            type="text"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                            placeholder="Apellidos completos"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">DNI *</label>
+                          <input
+                            value={dniRH}
+                            onChange={(e) => setDniRH(e.target.value)}
+                            type="text"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                            placeholder="Número de DNI"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Username *</label>
+                          <input
+                            value={usernameRH}
+                            onChange={(e) => setUsernameRH(e.target.value)}
+                            type="text"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                            placeholder="Nombre de usuario"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Password *</label>
+                          <input
+                            value={passwordRH}
+                            onChange={(e) => setPasswordRH(e.target.value)}
+                            type="password"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                            placeholder="Contraseña"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Cargo *</label>
+                          <select
+                            value={idCargoRH}
+                            onChange={(e) => setIdCargoRH(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none bg-white"
+                          >
+                            <option value="">Seleccione un cargo...</option>
+                            <option value="1">Administrador</option>
+                            <option value="2">Vendedor</option>
+                            <option value="3">Almacenero</option>
+                          </select>
+                        </div>
+
+                        {formError && (
+                          <div className="col-span-1 md:col-span-2 text-sm text-red-600 font-medium">{formError}</div>
+                        )}
+                        {formMessage && (
+                          <div className="col-span-1 md:col-span-2 text-sm text-teal-700 font-medium">{formMessage}</div>
+                        )}
+
+                        <div className="col-span-1 md:col-span-2 flex justify-end gap-3 pt-4">
+                          <button
+                            type="button"
+                            onClick={handleCloseModal}
+                            className="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-60"
+                          >
+                            {isSubmitting ? 'Registrando...' : 'Registrar Empleado'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                   <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
