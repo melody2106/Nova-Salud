@@ -8,6 +8,7 @@ import { Inventory } from "./pages/Inventory";
 import { Compras } from "./pages/Compras";
 import { HR } from "./pages/HR";
 import { Config } from "./pages/Config";
+import { Register } from "./pages/register";
 
 // ── Control de acceso por cargo (nombre_cargo de Cargos) ────────────────────
 // Administrador → todo
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
     path: "/login",
     Component: Login,
   },
+  { path: "/register", element: <Register /> },
   {
     path: "/dashboard",
     element: (
