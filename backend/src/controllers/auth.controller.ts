@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { executeStoredProcedure } from '../config/db.js';
+import pool, { executeStoredProcedure } from '../config/db.js';
 import { sendSuccess, sendError, handleError } from '../utils/responses.js';
 import { LoginRequest } from '../types/index.js';
 
@@ -56,6 +56,54 @@ export async function login(req: Request, res: Response): Promise<void> {
 
   } catch (error) {
     handleError(res, error, 'Error en el login');
+  }
+}
+
+/**
+ * POST /api/auth/register
+ * Registra un nuevo usuario junto con el empleado asociado
+ */
+export async function register(req: Request, res: Response): Promise<void> {
+  try {
+    const { username, password, nombres, apellidos, dni, id_cargo } = req.body;
+
+    if (!username || !password || !nombres || !apellidos || !dni || !id_cargo) {
+      sendError(res, 'Faltan datos obligatorios: username, password, nombres, apellidos, dni, id_cargo', 400);
+      return;
+    }
+
+    const passwordHash = await bcryptjs.hash(password, 10);
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const [empleadoResult]: any = await connection.execute(
+        'INSERT INTO Empleados (nombres, apellidos, dni, id_cargo) VALUES (?, ?, ?, ?)',
+        [nombres, apellidos, dni, id_cargo]
+      );
+
+      const id_empleado = empleadoResult.insertId;
+
+      await connection.execute(
+        'INSERT INTO Usuarios (username, password_hash, id_empleado) VALUES (?, ?, ?)',
+        [username, passwordHash, id_empleado]
+      );
+
+      await connection.commit();
+      res.status(201).json({ success: true, message: 'Usuario registrado con éxito' });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error: any) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      sendError(res, 'El nombre de usuario ya existe', 400);
+      return;
+    }
+    handleError(res, error, 'Error al registrar usuario');
   }
 }
 
