@@ -194,7 +194,7 @@ export type {
 
 /**
  * POST /api/auth/registrar
- * Registra un nuevo empleado + usuario con id_cargo=1 por defecto
+ * Registro público — crea Empleado + Usuario con id_cargo=1 (SP_Registrar)
  * Manda password en texto plano — el backend hace el hash con bcrypt
  */
 export async function registrarApi(data: {
@@ -210,3 +210,127 @@ export async function registrarApi(data: {
   );
   return res.data;
 }
+
+// ============================================================
+// RECURSOS HUMANOS
+// ============================================================
+
+export interface UsuarioListado {
+  id_empleado: number;
+  dni: string;
+  nombre_completo: string;
+  nombres: string;
+  apellidos: string;
+  nombre_cargo: string;
+  id_usuario: number | null;
+  username: string | null;
+  fecha_creacion: string | null;
+}
+
+/**
+ * POST /api/auth/register
+ * Registro interno desde RRHH — crea Empleado + Usuario con cargo específico
+ * Manda password en texto plano — el backend hace el hash con bcrypt
+ * Body: { username, password, nombres, apellidos, dni, id_cargo }
+ */
+export async function registrarEmpleadoConUsuario(data: {
+  dni: string;
+  nombres: string;
+  apellidos: string;
+  username: string;
+  password: string;
+  id_cargo: number;
+}): Promise<ApiResponse<{ username: string; nombres: string; apellidos: string }>> {
+  const res = await http.post<ApiResponse<{ username: string; nombres: string; apellidos: string }>>(
+    '/auth/register',
+    data
+  );
+  return res.data;
+}
+
+/**
+ * GET /api/auth/usuarios?busqueda=texto
+ * Lista empleados con sus credenciales de sistema via SP_Usuario_Listar_Busqueda.
+ * Si busqueda es vacío, devuelve todos los registros.
+ */
+export async function getUsuarios(busqueda: string = ''): Promise<UsuarioListado[]> {
+  const res = await http.get<ApiResponse<UsuarioListado[]>>('/auth/usuarios', {
+    params: { busqueda },
+  });
+
+  const payload = res.data?.data;
+  if (!payload) return [];
+
+  // Normalizar wrapper anidado de MySQL2 CALL
+  const rows: UsuarioListado[] = Array.isArray(payload[0]) ? (payload[0] as any) : payload;
+  return rows.filter(Boolean);
+}
+
+// ============================================================
+// INVENTARIO — Registro de productos
+// ============================================================
+
+export interface RegistrarProductoRequest {
+  id_laboratorio: number;
+  id_categoria: number;
+  id_presentacion: number;
+  nombre_comercial: string;
+  principio_activo?: string;
+  stock_minimo?: number;
+}
+
+/**
+ * POST /api/producto/registrar
+ * Registra un nuevo producto via SP_Producto_Registrar.
+ */
+export async function registrarProductoApi(
+  data: RegistrarProductoRequest
+): Promise<ApiResponse<{ nombre_comercial: string }>> {
+  const res = await http.post<ApiResponse<{ nombre_comercial: string }>>(
+    '/producto/registrar',
+    data
+  );
+  return res.data;
+}
+
+// ============================================================
+// EMPLEADOS — Búsqueda por DNI y credenciales
+// ============================================================
+
+export interface EmpleadoBuscado {
+  id_empleado: number;
+  nombres: string;
+  apellidos: string;
+  nombre_completo: string;
+  dni: string;
+  nombre_cargo: string;
+}
+
+/**
+ * GET /api/empleados/buscar/:dni
+ * Busca un empleado por DNI usando SP_Empleado_BuscarDNI.
+ * Devuelve null si no se encuentra (404).
+ */
+export async function buscarEmpleadoPorDni(dni: string): Promise<EmpleadoBuscado | null> {
+  // Deja que todos los errores (404, 500, red) se propaguen al llamador.
+  // El llamador es responsable de extraer el mensaje y mostrarlo al usuario.
+  const res = await http.get<ApiResponse<EmpleadoBuscado>>(`/empleados/buscar/${dni.trim()}`);
+  return res.data?.data ?? null;
+}
+
+/**
+ * POST /api/auth/crear-credencial
+ * Crea username + contraseña para un empleado ya registrado.
+ * Body: { id_empleado, username, password }
+ */
+export async function crearCredencialApi(data: {
+  id_empleado: number;
+  username: string;
+  password: string;
+}): Promise<ApiResponse<{ username: string; id_empleado: number }>> {
+  const res = await http.post<ApiResponse<{ username: string; id_empleado: number }>>(
+    '/auth/crear-credencial',
+    data
+  );
+  return res.data;
+}

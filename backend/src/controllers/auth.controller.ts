@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import pool, { executeStoredProcedure } from '../config/db.js';
+import { executeStoredProcedure } from '../config/db.js';
 import { sendSuccess, sendError, handleError } from '../utils/responses.js';
 import { LoginRequest } from '../types/index.js';
 
 /**
  * POST /api/auth/login
+ * Autentica usuario con SP_Login + bcrypt + JWT
  */
 export async function login(req: Request, res: Response): Promise<void> {
   try {
@@ -61,7 +62,9 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 /**
  * POST /api/auth/register
- * Registra un nuevo usuario junto con el empleado asociado
+ * Registro interno desde RRHH/Admin — crea Empleado + Usuario con el cargo indicado.
+ * Usa SP_Empleado_Registrar_Con_Usuario (100% Stored Procedures).
+ * Body: { username, password, nombres, apellidos, dni, id_cargo }
  */
 export async function register(req: Request, res: Response): Promise<void> {
   try {
@@ -73,37 +76,33 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
 
     const passwordHash = await bcryptjs.hash(password, 10);
-    const connection = await pool.getConnection();
 
-    try {
-      await connection.beginTransaction();
+    // SP_Empleado_Registrar_Con_Usuario(p_nombres, p_apellidos, p_dni, p_id_cargo, p_username, p_password_hash)
+    const results: any = await executeStoredProcedure('SP_Empleado_Registrar_Con_Usuario', [
+      nombres,
+      apellidos,
+      dni,
+      Number(id_cargo),
+      username,
+      passwordHash,
+    ]);
 
-      const [empleadoResult]: any = await connection.execute(
-        'INSERT INTO Empleados (nombres, apellidos, dni, id_cargo) VALUES (?, ?, ?, ?)',
-        [nombres, apellidos, dni, id_cargo]
-      );
+    // El SP puede devolver { resultado: 'OK'|'ERROR', mensaje: string }
+    const row = results?.[0]?.[0];
 
-      const id_empleado = empleadoResult.insertId;
-
-      await connection.execute(
-        'INSERT INTO Usuarios (username, password_hash, id_empleado) VALUES (?, ?, ?)',
-        [username, passwordHash, id_empleado]
-      );
-
-      await connection.commit();
-      res.status(201).json({ success: true, message: 'Usuario registrado con éxito' });
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-  } catch (error: any) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      sendError(res, 'El nombre de usuario ya existe', 400);
+    if (row && row.resultado === 'ERROR') {
+      sendError(res, row.mensaje || 'Error al registrar empleado', 400);
       return;
     }
-    handleError(res, error, 'Error al registrar usuario');
+
+    sendSuccess(res, { username, nombres, apellidos }, 'Empleado registrado con éxito', 201);
+
+  } catch (error: any) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      sendError(res, 'El DNI o nombre de usuario ya existe', 409);
+      return;
+    }
+    handleError(res, error, 'Error al registrar empleado');
   }
 }
 
@@ -138,7 +137,7 @@ export async function registrarUsuario(req: Request, res: Response): Promise<voi
 
   } catch (error: any) {
     if (error.code === 'ER_DUP_ENTRY') {
-      sendError(res, 'El DNI o username ya existe', 400);
+      sendError(res, 'El DNI o username ya existe', 409);
       return;
     }
     handleError(res, error, 'Error al registrar usuario');
@@ -167,9 +166,36 @@ export async function crearUsuario(req: Request, res: Response): Promise<void> {
 
   } catch (error: any) {
     if (error.code === 'ER_DUP_ENTRY') {
-      sendError(res, 'El username ya existe', 400);
+      sendError(res, 'El username ya existe', 409);
       return;
     }
     handleError(res, error, 'Error al crear usuario');
+  }
+}
+
+/**
+ * GET /api/auth/usuarios?busqueda=texto
+ * Lista empleados con sus usuarios del sistema usando SP_Usuario_Listar_Busqueda.
+ * Normaliza el wrapper anidado que puede devolver MySQL2 con CALL.
+ */
+export async function listarUsuarios(req: Request, res: Response): Promise<void> {
+  try {
+    const busqueda = (req.query.busqueda as string) || '';
+
+    const results: any = await executeStoredProcedure('SP_Usuario_Listar_Busqueda', [busqueda]);
+
+    // MySQL2 con CALL devuelve: [[filas], OkPacket] → normalizar
+    let rows: any[];
+    if (Array.isArray(results?.[0])) {
+      rows = results[0]; // forma anidada: results = [[{...}], OkPacket]
+    } else if (Array.isArray(results)) {
+      rows = results;    // forma plana: results = [{...}]
+    } else {
+      rows = [];
+    }
+
+    sendSuccess(res, rows, 'Usuarios listados correctamente');
+  } catch (error) {
+    handleError(res, error, 'Error al listar usuarios');
   }
 }

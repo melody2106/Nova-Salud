@@ -6,6 +6,7 @@ import { testConnection } from './config/db.js';
 // Importar rutas
 import authRoutes from './routes/auth.routes.js';
 import productoRoutes from './routes/producto.routes.js';
+import empleadoRoutes from './routes/empleado.routes.js';
 import ventaRoutes from './routes/venta.routes.js';
 import compraRoutes from './routes/compra.routes.js';
 import reporteRoutes from './routes/reporte.routes.js';
@@ -49,6 +50,9 @@ app.use('/api/auth', authRoutes);
 
 // Rutas de productos
 app.use('/api/producto', productoRoutes);
+
+// Rutas de empleados
+app.use('/api/empleados', empleadoRoutes);
 
 // Rutas de ventas
 app.use('/api/ventas', ventaRoutes);

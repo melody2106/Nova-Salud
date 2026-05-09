@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listarProductos, obtenerPreciosProducto } from '../controllers/producto.controller.js';
+import { listarProductos, obtenerPreciosProducto, registrarProducto } from '../controllers/producto.controller.js';
 
 const router = Router();
 
@@ -14,5 +14,11 @@ router.get('/listar', listarProductos);
  * Obtiene los precios disponibles de un producto específico
  */
 router.get('/:id_producto/precios', obtenerPreciosProducto);
+
+/**
+ * POST /api/producto/registrar
+ * Registra un nuevo producto usando SP_Producto_Registrar
+ */
+router.post('/registrar', registrarProducto);
 
 export default router;
