@@ -80,6 +80,7 @@ export interface VentaRequest {
   id_cliente: number;                    // Clientes.id_cliente (1 = Público General)
   id_usuario: number;                    // Usuarios.id_usuario (el cajero autenticado)
   total: number;                         // Ventas.total
+  metodo_pago: string;                   // efectivo | tarjeta | transferencia
   detalles: DetalleVentaRequest[];
 }
 

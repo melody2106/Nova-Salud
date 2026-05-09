@@ -77,7 +77,7 @@ export function Pos() {
 
   // --- Estado UI ---
   const [comprobante, setComprobante] = useState<"boleta" | "factura">("boleta");
-  const [metodoPago, setMetodoPago] = useState<"efectivo" | "tarjeta" | "transferencia" | "mixto">("efectivo");
+  const [metodoPago, setMetodoPago] = useState<"efectivo" | "tarjeta" | "transferencia">("efectivo");
   const [montoRecibido, setMontoRecibido] = useState("0.00");
 
   // --- Estado de datos ---
@@ -276,6 +276,7 @@ export function Pos() {
       id_cliente:          1,                                   // Público en General
       id_usuario:          Number(user?.id_usuario) || 2,       // Del AuthContext
       total:               totalFinal,
+      metodo_pago:         metodoPago,                          // efectivo | tarjeta | transferencia
       detalles,
     };
 
@@ -539,7 +540,7 @@ export function Pos() {
             <div className="space-y-4 flex-1">
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-2">Método de Pago</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => setMetodoPago("efectivo")}
                     className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-colors ${metodoPago === "efectivo" ? "bg-teal-50 border-teal-500 text-teal-700 shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}
@@ -556,17 +557,10 @@ export function Pos() {
                   </button>
                   <button
                     onClick={() => setMetodoPago("transferencia")}
-                    className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-colors ${metodoPago === "transferencia" ? "bg-teal-50 border-teal-500 text-teal-700 shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+                    className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${metodoPago === "transferencia" ? "bg-[#742284] border-[#742284] text-white shadow-lg shadow-[#742284]/30 scale-105" : "bg-[#742284] border-[#742284] text-white hover:shadow-lg hover:shadow-[#742284]/30 hover:scale-105"}`}
                   >
-                    <ArrowRightLeft className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-medium">Yape/Plin</span>
-                  </button>
-                  <button
-                    onClick={() => setMetodoPago("mixto")}
-                    className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-colors ${metodoPago === "mixto" ? "bg-teal-50 border-teal-500 text-teal-700 shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"}`}
-                  >
-                    <PlusCircle className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-medium">Mixto</span>
+                    <span className="text-xl mb-1">📱</span>
+                    <span className="text-xs font-bold">Yape</span>
                   </button>
                 </div>
               </div>

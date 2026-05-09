@@ -13,7 +13,7 @@ export async function registrarVenta(req: Request, res: Response): Promise<void>
   let connection;
 
   try {
-    const { id_tipo_comprobante, id_cliente, id_usuario, total, detalles } = req.body;
+    const { id_tipo_comprobante, id_cliente, id_usuario, total, metodo_pago, detalles } = req.body;
 
     // 1. Validaciones iniciales
     if (!id_tipo_comprobante || !id_cliente || !id_usuario || !total || !detalles || !Array.isArray(detalles)) {

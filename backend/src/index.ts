@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 3000;
 // CORS
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production' ? 'https://tusitio.com' : '*',
+    origin: 'http://localhost:5173', 
     credentials: true,
   })
 );
