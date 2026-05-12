@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Cross, User, Lock, AlertCircle } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext.js";
+import { useAuth } from "../../contexts/AuthContext.tsx";
 import { Link } from "react-router-dom";
 
 export function Login() {

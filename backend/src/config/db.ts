@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Pool de conexiones a la base de datos
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306'),
@@ -15,7 +14,6 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// Validar conexión al iniciar
 export async function testConnection(): Promise<void> {
   try {
     const connection = await pool.getConnection();
@@ -28,14 +26,16 @@ export async function testConnection(): Promise<void> {
   }
 }
 
-// Ejecutar Stored Procedures
 export async function executeStoredProcedure(
   procedureName: string,
   params: any[] = []
 ): Promise<any> {
   try {
     const connection = await pool.getConnection();
-    const query = `CALL ${procedureName}(${params.map(() => '?').join(',')})`;
+    const placeholders = params.map(() => '?').join(',');
+    const query = placeholders
+      ? `CALL ${procedureName}(${placeholders})`
+      : `CALL ${procedureName}()`;
     const [results] = await connection.execute(query, params);
     connection.release();
     return results;
@@ -45,5 +45,4 @@ export async function executeStoredProcedure(
   }
 }
 
-// Exportar el pool para uso directo si es necesario
 export default pool;

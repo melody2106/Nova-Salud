@@ -44,17 +44,21 @@ export async function login(req: Request, res: Response): Promise<void> {
       { expiresIn: '8h' }
     );
 
-    sendSuccess(res, {
-      token,
-      user: {
-        id_usuario: user.id_usuario,
-        username: user.username,
-        nombres: user.nombres,
-        apellidos: user.apellidos,
-        cargo: user.nombre_cargo,
+    sendSuccess(
+      res,
+      {
+        token,
+        user: {
+          id_usuario: user.id_usuario,
+          username: user.username,
+          nombres: user.nombres,
+          apellidos: user.apellidos,
+          nombre_cargo: user.nombre_cargo,
+        },
       },
-    }, 'Login exitoso', 200);
-
+      'Login exitoso',
+      200
+    );
   } catch (error) {
     handleError(res, error, 'Error en el login');
   }
@@ -62,8 +66,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 /**
  * POST /api/auth/register
- * Registro interno desde RRHH/Admin — crea Empleado + Usuario con el cargo indicado.
- * Usa SP_Empleado_Registrar_Con_Usuario (100% Stored Procedures).
+ * Registro interno desde RRHH/Admin — crea Empleado + Usuario con cargo específico
  * Body: { username, password, nombres, apellidos, dni, id_cargo }
  */
 export async function register(req: Request, res: Response): Promise<void> {
@@ -71,13 +74,16 @@ export async function register(req: Request, res: Response): Promise<void> {
     const { username, password, nombres, apellidos, dni, id_cargo } = req.body;
 
     if (!username || !password || !nombres || !apellidos || !dni || !id_cargo) {
-      sendError(res, 'Faltan datos obligatorios: username, password, nombres, apellidos, dni, id_cargo', 400);
+      sendError(
+        res,
+        'Faltan datos obligatorios: username, password, nombres, apellidos, dni, id_cargo',
+        400
+      );
       return;
     }
 
     const passwordHash = await bcryptjs.hash(password, 10);
 
-    // SP_Empleado_Registrar_Con_Usuario(p_nombres, p_apellidos, p_dni, p_id_cargo, p_username, p_password_hash)
     const results: any = await executeStoredProcedure('SP_Empleado_Registrar_Con_Usuario', [
       nombres,
       apellidos,
@@ -87,16 +93,13 @@ export async function register(req: Request, res: Response): Promise<void> {
       passwordHash,
     ]);
 
-    // El SP puede devolver { resultado: 'OK'|'ERROR', mensaje: string }
     const row = results?.[0]?.[0];
-
     if (row && row.resultado === 'ERROR') {
       sendError(res, row.mensaje || 'Error al registrar empleado', 400);
       return;
     }
 
     sendSuccess(res, { username, nombres, apellidos }, 'Empleado registrado con éxito', 201);
-
   } catch (error: any) {
     if (error.code === 'ER_DUP_ENTRY') {
       sendError(res, 'El DNI o nombre de usuario ya existe', 409);
@@ -108,7 +111,9 @@ export async function register(req: Request, res: Response): Promise<void> {
 
 /**
  * POST /api/auth/registrar
- * Registro público ANTES del login — crea Registro + Empleado + Usuario con id_cargo=1
+ * Registro público — crea Empleado + Usuario con id_cargo fijo (no-admin)
+ * NOTA: id_cargo se fija en 2 (Vendedor) para evitar crear administradores públicamente.
+ * Body: { dni, nombres, apellidos, username, password }
  */
 export async function registrarUsuario(req: Request, res: Response): Promise<void> {
   try {
@@ -119,22 +124,24 @@ export async function registrarUsuario(req: Request, res: Response): Promise<voi
       return;
     }
 
-    const salt = await bcryptjs.genSalt(10);
-    const passwordHash = await bcryptjs.hash(password, salt);
+    const passwordHash = await bcryptjs.hash(password, 10);
 
+    // Usamos SP_Registrar que internamente fija id_cargo seguro (Vendedor)
     const results: any = await executeStoredProcedure('SP_Registrar', [
-      dni, nombres, apellidos, username, passwordHash
+      dni,
+      nombres,
+      apellidos,
+      username,
+      passwordHash,
     ]);
 
     const row = results?.[0]?.[0];
-
     if (!row || row.resultado === 'ERROR') {
       sendError(res, row?.mensaje || 'Error al registrar', 400);
       return;
     }
 
     sendSuccess(res, { username }, 'Usuario registrado exitosamente', 201);
-
   } catch (error: any) {
     if (error.code === 'ER_DUP_ENTRY') {
       sendError(res, 'El DNI o username ya existe', 409);
@@ -145,51 +152,19 @@ export async function registrarUsuario(req: Request, res: Response): Promise<voi
 }
 
 /**
- * POST /api/auth/crear-usuario
- * Registro INTERNO desde el sistema (RRHH/Admin) — requiere id_empleado ya existente
- */
-export async function crearUsuario(req: Request, res: Response): Promise<void> {
-  try {
-    const { username, password, id_empleado } = req.body;
-
-    if (!username || !password || !id_empleado) {
-      sendError(res, 'Faltan datos: username, password, id_empleado', 400);
-      return;
-    }
-
-    const salt = await bcryptjs.genSalt(10);
-    const passwordHash = await bcryptjs.hash(password, salt);
-
-    await executeStoredProcedure('SP_Usuario_Crear', [username, passwordHash, id_empleado]);
-
-    sendSuccess(res, { username, id_empleado }, 'Usuario creado exitosamente', 201);
-
-  } catch (error: any) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      sendError(res, 'El username ya existe', 409);
-      return;
-    }
-    handleError(res, error, 'Error al crear usuario');
-  }
-}
-
-/**
  * GET /api/auth/usuarios?busqueda=texto
- * Lista empleados con sus usuarios del sistema usando SP_Usuario_Listar_Busqueda.
- * Normaliza el wrapper anidado que puede devolver MySQL2 con CALL.
+ * Lista empleados con sus usuarios — SP_Usuario_Listar_Busqueda
  */
 export async function listarUsuarios(req: Request, res: Response): Promise<void> {
   try {
     const busqueda = (req.query.busqueda as string) || '';
-
     const results: any = await executeStoredProcedure('SP_Usuario_Listar_Busqueda', [busqueda]);
 
-    // MySQL2 con CALL devuelve: [[filas], OkPacket] → normalizar
     let rows: any[];
     if (Array.isArray(results?.[0])) {
-      rows = results[0]; // forma anidada: results = [[{...}], OkPacket]
+      rows = results[0];
     } else if (Array.isArray(results)) {
-      rows = results;    // forma plana: results = [{...}]
+      rows = results;
     } else {
       rows = [];
     }

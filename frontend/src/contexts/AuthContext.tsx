@@ -1,16 +1,12 @@
-// src/contexts/AuthContext.tsx
-// Context global para manejo de autenticación — conectado al backend real
-// El campo nombre_cargo corresponde a Cargos.nombre_cargo (SP_Login JOIN con Cargos)
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { loginApi } from '../services/api';
+import { loginApi } from '../services/api.ts';
 
 export interface User {
   id_usuario: number;
   username: string;
   nombres: string;
   apellidos: string;
-  nombre_cargo: string;  // valor exacto de Cargos.nombre_cargo: 'Administrador' | 'Vendedor' | 'Almacenero'
+  nombre_cargo: string; // 'Administrador' | 'Vendedor' | 'Almacenero'
 }
 
 interface AuthContextType {
@@ -28,19 +24,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Restaurar sesión desde localStorage si existe
+    // Restaurar sesión desde localStorage
     const savedData = localStorage.getItem('user');
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        // El backend guarda { token, user: { id_usuario, username, nombres, apellidos, nombre_cargo } }
         if (parsed?.user) {
           const u = parsed.user;
           setUser({
-            id_usuario: Number(u.id_usuario),
-            username:    String(u.username),
-            nombres:     String(u.nombres),
-            apellidos:   String(u.apellidos),
+            id_usuario:   Number(u.id_usuario),
+            username:     String(u.username),
+            nombres:      String(u.nombres),
+            apellidos:    String(u.apellidos),
             nombre_cargo: String(u.nombre_cargo ?? u.cargo ?? ''),
           });
         }
@@ -60,7 +55,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { token, user: backendUser } = response.data;
 
-    // Persistir token + datos del usuario
     localStorage.setItem('user', JSON.stringify({ token, user: backendUser }));
 
     setUser({
@@ -75,18 +69,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout,
-      }}
+      value={{ user, isAuthenticated: !!user, isLoading, login, logout }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,6 +1,5 @@
 // ===== TIPOS DE RESPUESTA DE STORED PROCEDURES =====
 
-// SP_Login: Usuario con datos del empleado y su cargo
 export interface LoginResponse {
   id_usuario: number;
   username: string;
@@ -10,7 +9,6 @@ export interface LoginResponse {
   nombre_cargo: string;
 }
 
-// SP_Producto_Listar: Listado de productos con info de categoría, laboratorio, etc.
 export interface ProductoListar {
   id_producto: number;
   nombre_comercial: string;
@@ -22,7 +20,6 @@ export interface ProductoListar {
   proximo_vencimiento: string | null;
 }
 
-// SP_Producto_Precios: Precios disponibles de un producto
 export interface ProductoPrecio {
   id_producto_precio: number;
   nombre_unidad: string;
@@ -30,25 +27,57 @@ export interface ProductoPrecio {
   precio_venta: number;
 }
 
-// SP_Venta_Crear: Respuesta de creación de venta
 export interface VentaCrear {
   id_venta_generada: number;
 }
 
-// SP_Compra_Crear: Respuesta de creación de compra
 export interface CompraCrear {
   id_compra_generada: number;
 }
 
+// ===== TIPOS DE CATÁLOGOS =====
+
+export interface Laboratorio {
+  id_laboratorio: number;
+  nombre_laboratorio: string;
+}
+
+export interface Categoria {
+  id_categoria: number;
+  nombre_categoria: string;
+}
+
+export interface Presentacion {
+  id_presentacion: number;
+  nombre_presentacion: string;
+}
+
+export interface Cargo {
+  id_cargo: number;
+  nombre_cargo: string;
+}
+
 // ===== TIPOS PARA SOLICITUDES (Request Bodies) =====
 
-// Login Request
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
-// Response genérico de API
+// ===== JWT PAYLOAD =====
+
+export interface JwtPayload {
+  id_usuario: number;
+  username: string;
+  nombres: string;
+  apellidos: string;
+  cargo: string;
+  iat?: number;
+  exp?: number;
+}
+
+// ===== RESPUESTA GENÉRICA DE API =====
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;

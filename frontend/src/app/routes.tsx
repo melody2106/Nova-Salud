@@ -1,14 +1,14 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { Layout } from "./components/Layout";
-import { ProtectedRoute } from "../components/ProtectedRoute";
-import { RoleRoute } from "../components/RoleRoute";
-import { Login } from "./pages/Login";
-import { Pos } from "./pages/Pos";
-import { Inventory } from "./pages/Inventory";
-import { Compras } from "./pages/Compras";
-import { HR } from "./pages/HR";
-import { Config } from "./pages/Config";
-import { Register } from "./pages/register";
+import { Layout } from "./components/Layout.tsx";
+import { ProtectedRoute } from "../components/ProtectedRoute.tsx";
+import { RoleRoute } from "../components/RoleRoute.tsx";
+import { Login } from "./pages/Login.tsx";
+import { Pos } from "./pages/Pos.tsx";
+import { Inventory } from "./pages/Inventory.tsx";
+import { Compras } from "./pages/Compras.tsx";
+import { HR } from "./pages/HR.tsx";
+import { Config } from "./pages/Config.tsx";
+import { Register } from "./pages/register.tsx";
 
 // ── Control de acceso por cargo (nombre_cargo de Cargos) ────────────────────
 // Administrador → todo

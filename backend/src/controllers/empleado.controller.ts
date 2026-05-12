@@ -5,12 +5,11 @@ import { sendSuccess, sendError, handleError } from '../utils/responses.js';
 
 /**
  * GET /api/empleados/buscar/:dni
- * Busca un empleado por DNI usando SP_Empleado_BuscarDNI.
- * Normaliza el wrapper de MySQL2: CALL devuelve [[filas], OkPacket].
+ * Busca un empleado por DNI usando SP_Empleado_BuscarDNI
  */
 export async function buscarEmpleadoPorDni(req: Request, res: Response): Promise<void> {
   try {
-    const { dni } = req.params;
+    const { dni } = req.params as { dni: string };
 
     if (!dni || dni.trim().length === 0) {
       sendError(res, 'El DNI es requerido', 400);
@@ -18,8 +17,6 @@ export async function buscarEmpleadoPorDni(req: Request, res: Response): Promise
     }
 
     const results: any = await executeStoredProcedure('SP_Empleado_BuscarDNI', [dni.trim()]);
-
-    // Normalizar: CALL MySQL2 → [[filas], OkPacket]
     const empleado = results?.[0]?.[0];
 
     if (!empleado) {
@@ -35,8 +32,7 @@ export async function buscarEmpleadoPorDni(req: Request, res: Response): Promise
 
 /**
  * POST /api/auth/crear-credencial
- * Crea usuario + contraseña para un empleado ya existente.
- * Encripta la contraseña con bcrypt antes de llamar al SP.
+ * Crea usuario + contraseña para un empleado ya existente — SP_Usuario_Crear_Credencial
  * Body: { id_empleado, username, password }
  */
 export async function crearCredencial(req: Request, res: Response): Promise<void> {
@@ -56,9 +52,7 @@ export async function crearCredencial(req: Request, res: Response): Promise<void
       password_hash,
     ]);
 
-    // Normalizar wrapper
     const row = results?.[0]?.[0];
-
     if (row?.resultado === 'ERROR') {
       sendError(res, row.mensaje || 'Error al crear credencial', 400);
       return;

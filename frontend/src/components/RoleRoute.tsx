@@ -3,7 +3,7 @@
 // Si el usuario autenticado no tiene el cargo requerido, lo redirige a su página de inicio.
 
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext.tsx";
 
 interface RoleRouteProps {
   children: React.ReactNode;
